@@ -1,9 +1,14 @@
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
 from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled
 
 from src import transcripts
+
+
+def _fake_fetched(snippets: list[dict]):
+    return SimpleNamespace(snippets=[SimpleNamespace(**s) for s in snippets])
 
 
 def test_format_transcript_basic():
@@ -47,51 +52,31 @@ def _raise(exc):
 
 
 def test_fetch_transcript_handles_disabled():
-    with patch.object(
-        transcripts.YouTubeTranscriptApi,
-        "get_transcript",
-        side_effect=_raise(TranscriptsDisabled("v1")),
-    ):
+    with patch.object(transcripts._api, "fetch", side_effect=_raise(TranscriptsDisabled("v1"))):
         assert transcripts.fetch_transcript("v1") is None
 
 
 def test_fetch_transcript_handles_not_found():
-    with patch.object(
-        transcripts.YouTubeTranscriptApi,
-        "get_transcript",
-        side_effect=_raise(NoTranscriptFound("v1", ["en"], None)),
-    ):
+    with patch.object(transcripts._api, "fetch", side_effect=_raise(NoTranscriptFound("v1", ["en"], None))):
         assert transcripts.fetch_transcript("v1") is None
 
 
 def test_fetch_transcript_handles_generic_error():
-    with patch.object(
-        transcripts.YouTubeTranscriptApi,
-        "get_transcript",
-        side_effect=_raise(RuntimeError("boom")),
-    ):
+    with patch.object(transcripts._api, "fetch", side_effect=_raise(RuntimeError("boom"))):
         assert transcripts.fetch_transcript("v1") is None
 
 
 def test_fetch_transcript_returns_formatted():
-    fake_segments = [{"text": "hello", "start": 0, "duration": 1}]
-    with patch.object(
-        transcripts.YouTubeTranscriptApi,
-        "get_transcript",
-        return_value=fake_segments,
-    ):
+    fake = _fake_fetched([{"text": "hello", "start": 0, "duration": 1}])
+    with patch.object(transcripts._api, "fetch", return_value=fake):
         result = transcripts.fetch_transcript("v1")
         assert "[00:00] hello" in result
 
 
 @pytest.mark.asyncio
 async def test_fetch_all_transcripts_returns_dict():
-    fake_segments = [{"text": "hi", "start": 0, "duration": 1}]
-    with patch.object(
-        transcripts.YouTubeTranscriptApi,
-        "get_transcript",
-        return_value=fake_segments,
-    ):
+    fake = _fake_fetched([{"text": "hi", "start": 0, "duration": 1}])
+    with patch.object(transcripts._api, "fetch", return_value=fake):
         result = await transcripts.fetch_all_transcripts(["v1", "v2"])
         assert set(result.keys()) == {"v1", "v2"}
         assert all(v is not None for v in result.values())
@@ -102,13 +87,9 @@ async def test_fetch_all_handles_partial_failure():
     def side_effect(video_id, **kwargs):
         if video_id == "fail":
             raise TranscriptsDisabled("fail")
-        return [{"text": "hi", "start": 0, "duration": 1}]
+        return _fake_fetched([{"text": "hi", "start": 0, "duration": 1}])
 
-    with patch.object(
-        transcripts.YouTubeTranscriptApi,
-        "get_transcript",
-        side_effect=side_effect,
-    ):
+    with patch.object(transcripts._api, "fetch", side_effect=side_effect):
         result = await transcripts.fetch_all_transcripts(["ok", "fail"])
         assert result["ok"] is not None
         assert result["fail"] is None

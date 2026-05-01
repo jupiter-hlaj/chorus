@@ -3,6 +3,6 @@ mangum>=0.17
 uvicorn[standard]>=0.30
 google-genai>=1.0
 google-api-python-client>=2.150
-youtube-transcript-api>=0.6,<1.0
+youtube-transcript-api>=1.0
 pydantic>=2.0
 python-dotenv>=1.0

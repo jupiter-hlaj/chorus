@@ -10,6 +10,7 @@ from youtube_transcript_api import (
 from src.config import config
 
 logger = logging.getLogger(__name__)
+_api = YouTubeTranscriptApi()
 
 
 def format_transcript(segments: list[dict], max_minutes: int) -> str:
@@ -26,7 +27,8 @@ def format_transcript(segments: list[dict], max_minutes: int) -> str:
 
 def fetch_transcript(video_id: str) -> str | None:
     try:
-        segments = YouTubeTranscriptApi.get_transcript(video_id, languages=["en", "en-US", "en-GB"])
+        fetched = _api.fetch(video_id, languages=["en", "en-US", "en-GB"])
+        segments = [{"start": s.start, "duration": s.duration, "text": s.text} for s in fetched.snippets]
         return format_transcript(segments, config.max_transcript_minutes)
     except (TranscriptsDisabled, NoTranscriptFound):
         logger.info("No transcript for video %s - skipping", video_id)
