@@ -3,7 +3,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from mangum import Mangum
 from pydantic import BaseModel
 
 from src.config import config
@@ -74,6 +73,3 @@ async def search(req: SearchRequest):
             )
 
     return result
-
-
-handler = Mangum(app, lifespan="off", api_gateway_base_path=config.environment)

@@ -1,19 +1,14 @@
-.PHONY: build test lint local-dev local-lambda deploy-dev
+.PHONY: install test lint run
 
-build:
-	sam build --template template.yaml --use-container
+install:
+	python3 -m venv .venv
+	.venv/bin/pip install -r requirements.txt -r requirements-dev.txt
 
 test:
-	pytest tests/ -v --tb=short
+	.venv/bin/pytest tests/ -v --tb=short
 
 lint:
-	ruff check src/ && ruff format --check src/ && bandit -r src/ -ll
+	.venv/bin/ruff check src/ tests/ && .venv/bin/ruff format --check src/ tests/ && .venv/bin/bandit -r src/ -ll
 
-local-dev:
-	uvicorn src.app:app --reload --port 8000
-
-local-lambda:
-	sam local start-api --template template.yaml --env-vars local.env.json
-
-deploy-dev:
-	sam deploy --config-env dev
+run:
+	.venv/bin/uvicorn src.app:app --reload --host 127.0.0.1 --port 8000

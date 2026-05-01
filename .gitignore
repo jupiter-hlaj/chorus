@@ -11,6 +11,4 @@ build/
 .ruff_cache/
 htmlcov/
 .coverage
-local.env.json
-.aws-sam/
 .DS_Store
