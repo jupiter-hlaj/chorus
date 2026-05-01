@@ -366,7 +366,8 @@
       setStatus("Searching YouTube and analyzing videos...", true);
 
       try {
-        const res = await fetch("/search", {
+        const searchUrl = window.location.pathname.replace(/\/?$/, "/") + "search";
+        const res = await fetch(searchUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query, max_videos: 5 }),
