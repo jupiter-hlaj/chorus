@@ -1,0 +1,37 @@
+# Chorus SAM deployment configuration
+# Bootstrap (first deploy only):
+#   1. aws s3 mb s3://chorus-sam-821891894512-dev --region ca-central-1
+#   2. sam deploy --config-env dev --guided (first time only)
+
+version = 0.1
+
+[default.global.parameters]
+region = "ca-central-1"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[dev.global.parameters]
+stack_name = "chorus-dev"
+region = "ca-central-1"
+
+[dev.build.parameters]
+cached = true
+parallel = true
+
+[dev.deploy.parameters]
+stack_name              = "chorus-dev"
+region                  = "ca-central-1"
+s3_bucket               = "chorus-sam-821891894512-dev"
+s3_prefix               = "chorus-dev"
+capabilities            = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+confirm_changeset       = false
+fail_on_empty_changeset = false
+parameter_overrides     = [
+  "Environment=dev",
+  "LogLevel=DEBUG"
+]

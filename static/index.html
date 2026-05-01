@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chorus - YouTube Opinion Aggregator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #0d0f12;
+      color: #e6e8eb;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    header { margin-bottom: 2rem; }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .tagline {
+      color: #8a91a0;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    form {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    input[type="text"] {
+      flex: 1;
+      background: #1a1d23;
+      border: 1px solid #2a2f37;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: #e6e8eb;
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus { border-color: #4a7eff; }
+    button {
+      background: #4a7eff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #3a6eff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status, .error {
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.92rem;
+    }
+    .status {
+      background: #1a1d23;
+      color: #8a91a0;
+    }
+    .status.loading::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #4a7eff;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      animation: pulse 1.4s infinite ease-in-out;
+      vertical-align: middle;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+    .error {
+      background: #2a1518;
+      color: #ff7a85;
+      border: 1px solid #4a1c22;
+    }
+
+    .verdict {
+      background: linear-gradient(135deg, #1c2540, #1a1d23);
+      border: 1px solid #2a3550;
+      border-left: 3px solid #4a7eff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      font-size: 1.05rem;
+    }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 2rem 0 0.75rem;
+      color: #c9cdd4;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .point {
+      background: #14171c;
+      border: 1px solid #232830;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .point-claim {
+      margin: 0 0 0.75rem;
+      font-size: 0.98rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+    .badge.positive { background: #134d2e; color: #6dffa3; }
+    .badge.negative { background: #4d1318; color: #ff8b95; }
+    .badge.neutral  { background: #4d3e13; color: #ffd66d; }
+    .badge.mixed    { background: #1e2c4d; color: #88a9ff; }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background: #1a1d23;
+      color: #b8bdc7;
+      border: 1px solid #2a2f37;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .chip:hover {
+      background: #232830;
+      color: #fff;
+      border-color: #4a7eff;
+    }
+    .chip-time {
+      font-weight: 600;
+      color: #4a7eff;
+      margin-left: 0.4rem;
+    }
+
+    .meta-section {
+      background: #14171c;
+      border: 1px solid #232830;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .meta-section h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8a91a0;
+      margin: 0 0 0.5rem;
+      font-weight: 700;
+    }
+    .meta-section p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .sources {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .sources li {
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #232830;
+      font-size: 0.9rem;
+    }
+    .sources li:last-child { border-bottom: none; }
+    .sources a {
+      color: #c9cdd4;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .sources a:hover { color: #4a7eff; }
+    .sources .channel {
+      color: #8a91a0;
+      font-size: 0.82rem;
+      margin-top: 2px;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 600px) {
+      .container { padding: 1.5rem 1rem 3rem; }
+      h1 { font-size: 1.6rem; }
+      form { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Chorus</h1>
+      <p class="tagline">Ask a question. Get the internet's real opinion - sourced from YouTube, with timestamped citations.</p>
+    </header>
+
+    <form id="search-form" autocomplete="off">
+      <input
+        type="text"
+        id="query"
+        placeholder="is the Sony WH-1000XM5 worth buying?"
+        required
+      />
+      <button type="submit" id="submit-btn">Ask</button>
+    </form>
+
+    <div id="status" class="status hidden"></div>
+    <div id="error" class="error hidden"></div>
+
+    <div id="results" class="hidden">
+      <div id="verdict" class="verdict"></div>
+
+      <h2>Key points</h2>
+      <div id="points"></div>
+
+      <div id="consensus-section" class="meta-section hidden">
+        <h3>Consensus</h3>
+        <p id="consensus"></p>
+      </div>
+
+      <div id="conflicts-section" class="meta-section hidden">
+        <h3>Conflicts</h3>
+        <p id="conflicts"></p>
+      </div>
+
+      <div id="caveats-section" class="meta-section hidden">
+        <h3>Caveats</h3>
+        <p id="caveats"></p>
+      </div>
+
+      <h2>Sources</h2>
+      <ul id="sources" class="sources"></ul>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(text, loading = false) {
+      const el = $("status");
+      el.textContent = text;
+      el.className = "status" + (loading ? " loading" : "");
+      $("error").classList.add("hidden");
+    }
+
+    function setError(text) {
+      $("error").textContent = text;
+      $("error").classList.remove("hidden");
+      $("status").classList.add("hidden");
+    }
+
+    function clearResults() {
+      $("results").classList.add("hidden");
+      $("verdict").textContent = "";
+      $("points").innerHTML = "";
+      $("sources").innerHTML = "";
+      $("consensus-section").classList.add("hidden");
+      $("conflicts-section").classList.add("hidden");
+      $("caveats-section").classList.add("hidden");
+    }
+
+    function escapeHTML(s) {
+      const div = document.createElement("div");
+      div.textContent = s ?? "";
+      return div.innerHTML;
+    }
+
+    function renderResults(data) {
+      $("verdict").textContent = data.verdict || "(no verdict)";
+
+      const pointsEl = $("points");
+      (data.points || []).forEach(point => {
+        const div = document.createElement("div");
+        div.className = "point";
+        const sentiment = (point.sentiment || "neutral").toLowerCase();
+        const validSentiments = ["positive", "negative", "neutral", "mixed"];
+        const badgeClass = validSentiments.includes(sentiment) ? sentiment : "neutral";
+        const chips = (point.sources || []).map(s => `
+          <a href="${escapeHTML(s.url)}" target="_blank" rel="noopener noreferrer" class="chip">
+            ${escapeHTML(s.channel || "Unknown")}<span class="chip-time">${escapeHTML(s.timestamp_label || "0:00")}</span>
+          </a>
+        `).join("");
+        div.innerHTML = `
+          <p class="point-claim">
+            <span class="badge ${badgeClass}">${escapeHTML(badgeClass)}</span>
+            ${escapeHTML(point.claim || "")}
+          </p>
+          <div class="chips">${chips}</div>
+        `;
+        pointsEl.appendChild(div);
+      });
+
+      if (data.consensus) {
+        $("consensus").textContent = data.consensus;
+        $("consensus-section").classList.remove("hidden");
+      }
+      if (data.conflicts) {
+        $("conflicts").textContent = data.conflicts;
+        $("conflicts-section").classList.remove("hidden");
+      }
+      if (data.caveats) {
+        $("caveats").textContent = data.caveats;
+        $("caveats-section").classList.remove("hidden");
+      }
+
+      const sourcesEl = $("sources");
+      (data.sources || []).forEach(s => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <a href="${escapeHTML(s.url)}" target="_blank" rel="noopener noreferrer">
+            ${escapeHTML(s.title)}
+          </a>
+          <div class="channel">${escapeHTML(s.channel)} - ${(s.view_count || 0).toLocaleString()} views</div>
+        `;
+        sourcesEl.appendChild(li);
+      });
+
+      $("results").classList.remove("hidden");
+    }
+
+    $("search-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const query = $("query").value.trim();
+      if (!query) return;
+
+      $("submit-btn").disabled = true;
+      clearResults();
+      $("status").classList.remove("hidden");
+      setStatus("Searching YouTube and analyzing videos...", true);
+
+      try {
+        const res = await fetch("/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, max_videos: 5 }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+          setError(err.detail || "Something went wrong. Try again.");
+          return;
+        }
+
+        const data = await res.json();
+        setStatus(`Analyzed ${data.videos_analyzed} videos.`);
+        renderResults(data);
+      } catch (err) {
+        setError("Request failed. Check your connection.");
+      } finally {
+        $("submit-btn").disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
